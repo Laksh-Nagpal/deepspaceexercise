@@ -78,3 +78,22 @@ security choices and future improvements.
 - A credential-pattern and local-secret scan found no credentials in the
   version-controlled/source candidate files. Generated auth/build files remain
   ignored.
+
+Production verification also passed on November 25:
+
+- Deployed release `rel_01M8ABS4CA814SC5Q26MXWGWCE` from clean application commit
+  `a8e2422`; DeepSpace confirmed edge serving and the data plane.
+- Three independent signed-in browser contexts exercised sample creation,
+  email-bound invitation acceptance, coach point entry, viewer read-only access,
+  live point/observation delivery and open-session coach revocation.
+- A real production DeepSpace AI call returned three recommendations. The
+  displayed evidence was verified against the synthetic 13-point sample:
+  nine points won, a 69% win rate. The saved report survived refresh.
+- Mobile touch emulation at 390 × 844 verified match creation, court placement,
+  saving and refresh persistence, with no horizontal overflow.
+- Desktop, analysis and mobile screenshots were visually inspected. No uncaught
+  browser errors or recent production error logs were observed.
+
+The two production sample notebooks belong only to dedicated test accounts;
+reviewers can create their own private sample using the in-app button. No real
+player data or test-account passwords are included in this repository.
