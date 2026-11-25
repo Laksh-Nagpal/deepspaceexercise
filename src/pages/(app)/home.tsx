@@ -167,8 +167,8 @@ function Workspace() {
               tells a story.
             </h1>
             <p>
-              Keep the score simple. Map your finishing shots, track outcomes,
-              and see how the match unfolds.
+              Keep the score simple. Record rallies shot by shot, track outcomes,
+              and see how each point unfolds.
             </p>
             <Button size="lg" onClick={() => setCreating(true)}>
               <Plus /> Create a match

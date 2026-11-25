@@ -26,7 +26,7 @@ declare const __DEEPSPACE_SITE_ORIGIN__: string | undefined
 
 export const seo = {
   title: APP_NAME,
-  description: 'Track tennis points, map finishing shots, and understand your match with RallyIQ.',
+  description: 'Record tennis rallies shot by shot, replay the buildup, and find evidence-based tactics with RallyIQ.',
   /** Public origin for canonical URLs, og:url, and the sitemap — no trailing
    *  slash. Replace with the custom domain once one is attached, e.g.
    *  'https://www.example.com'. */

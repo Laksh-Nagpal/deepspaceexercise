@@ -24,8 +24,8 @@ export default function Landing() {
               <em>Point by point.</em>
             </h1>
             <p>
-              Go beyond the score. Map your finishing shots, track the moments
-              that matter, and build a better understanding of your tennis.
+              Go beyond the score. Record every shot, replay the buildup,
+              and understand what created each point.
             </p>
             <Link className="landing-cta" to="/home">
               Open your match notebook <ArrowUpRight size={17} />

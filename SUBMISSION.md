@@ -124,3 +124,11 @@ ordered replay markers, coordinate persistence after refresh, and restoration
 in a fresh browser context. Existing four-user access/revocation tests still
 pass. The live provider test now uses explicit three-shot rallies and verifies
 that rally evidence is available alongside the exact point totals.
+
+Production rally verification also passed: older finishing-shot-only points
+were retained and explicitly labelled. A five-shot rally recorded with mobile
+touch input added exactly one completed point and synchronized to a second
+browser. The synthetic match's totals were verified as 13 points, 41 recorded
+shots, and a 3.2-shot average. Numbered replay survived refresh, and a real
+DeepSpace AI report used the recorded-rally evidence. No uncaught browser
+errors or mobile horizontal overflow were observed.
