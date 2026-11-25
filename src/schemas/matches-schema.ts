@@ -1,5 +1,5 @@
 import { teamPermissions } from './collaboration-schema'
-import type { CollectionSchema, RolePermissions } from 'deepspace/schema'
+import type { CollectionSchema } from 'deepspace/schema'
 
 export const matchesSchema: CollectionSchema = {
   name: 'matches',
@@ -47,6 +47,7 @@ export const pointsSchema: CollectionSchema = {
       interpretation: 'plain',
       immutable: false,
     },
+    { name: 'rally', storage: 'text', interpretation: { kind: 'json' } },
     { name: 'shotBy', storage: 'text', interpretation: 'plain' },
     { name: 'requestId', storage: 'text', interpretation: 'plain' },
     {

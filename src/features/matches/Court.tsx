@@ -1,16 +1,23 @@
 import { useState } from 'react'
-import type { Point } from './model'
+import { shotsOf, type Shot, type Point } from './model'
 
 type Location = { x: number; y: number }
 export function Court({
   points,
   selected,
   onSelect,
+  shots,
+  numbered = false,
+  activeIndex,
 }: {
   points: Point[]
   selected?: Location
   onSelect?: (p: Location) => void
+  shots?: Shot[]
+  numbered?: boolean
+  activeIndex?: number
 }) {
+  const marks = shots ?? points.flatMap(shotsOf)
   const [cursor, setCursor] = useState<Location>({ x: 0.5, y: 0.5 })
   return (
     <svg
@@ -21,13 +28,13 @@ export function Court({
       aria-label={
         onSelect
           ? 'Tennis court: click a shot location, or use arrow keys and Enter'
-          : 'Tennis court with finishing shot locations'
+          : 'Tennis court with recorded shot locations'
       }
       onClick={
         onSelect
           ? (e) => {
               const rect = e.currentTarget.getBoundingClientRect()
-              onSelect({
+              const next = {
                 x: Math.max(
                   0,
                   Math.min(1, (e.clientX - rect.left) / rect.width),
@@ -36,7 +43,9 @@ export function Court({
                   0,
                   Math.min(1, (e.clientY - rect.top) / rect.height),
                 ),
-              })
+              }
+              setCursor(next)
+              onSelect(next)
             }
           : undefined
       }
@@ -110,21 +119,48 @@ export function Court({
         strokeWidth="2"
         strokeDasharray="4 3"
       />
-      {points.map((p, i) => (
-        <circle
-          key={i}
-          cx={p.x * 420}
-          cy={p.y * 720}
-          r="6"
-          fill={p.winner === 'player' ? '#d6f27a' : '#ffb194'}
-          stroke="#153b2d"
-          strokeWidth="1.5"
-        >
-          <title>
-            {p.shotType} · {p.outcome} ·{' '}
-            {p.winner === 'player' ? 'point won' : 'point lost'}
-          </title>
-        </circle>
+      {numbered && marks.length > 1 && (
+        <polyline
+          data-testid="rally-path"
+          points={marks.map((p) => `${p.x * 420},${p.y * 720}`).join(' ')}
+          fill="none"
+          stroke="#eff5d3"
+          opacity=".7"
+          strokeWidth="2"
+          strokeDasharray="5 5"
+          pointerEvents="none"
+        />
+      )}
+      {marks.map((p, i) => (
+        <g key={i} pointerEvents="none">
+          <circle
+            className="shot-marker"
+            data-shot-number={i + 1}
+            cx={p.x * 420}
+            cy={p.y * 720}
+            r={numbered ? (activeIndex === i ? 12 : 10) : 6}
+            fill={p.shotBy === 'player' ? '#d6f27a' : '#ffb194'}
+            stroke={activeIndex === i ? '#fff' : '#153b2d'}
+            strokeWidth={activeIndex === i ? 3 : 1.5}
+          >
+            <title>
+              Shot {i + 1}: {p.shotBy === 'player' ? 'Player' : 'Opponent'} ·{' '}
+              {p.shotType}
+            </title>
+          </circle>
+          {numbered && (
+            <text
+              x={p.x * 420}
+              y={p.y * 720 + 4}
+              textAnchor="middle"
+              fill="#153b2d"
+              fontSize="11"
+              fontWeight="700"
+            >
+              {i + 1}
+            </text>
+          )}
+        </g>
       ))}
       {selected && (
         <g stroke="#fff" fill="none" strokeWidth="2">

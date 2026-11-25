@@ -1215,3 +1215,105 @@ dialog.modal-shade:not([open]) {
     margin-top: 15px;
   }
 }
+/* A rally draft is separate from completed-point scoring. */
+.rally-stats .stat strong {
+  font-size: 24px;
+}
+.coverage-note {
+  color: #6b7864;
+  font-size: 11px;
+  margin: -8px 0 22px;
+  line-height: 1.7;
+}
+.replay-controls {
+  border-bottom: 1px solid var(--color-border);
+  padding: 15px 0;
+}
+.replay-controls p {
+  font-size: 11px;
+  line-height: 1.7;
+  margin-bottom: 10px;
+}
+.replay-controls > div {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.replay-shot-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 16px;
+}
+.replay-shot-list button {
+  padding: 7px 10px;
+  border: 1px solid var(--color-border);
+  font-size: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  text-transform: capitalize;
+}
+.replay-shot-list button[aria-pressed='true'] {
+  background: #e7efd9;
+  border-color: #648346;
+}
+.replay-shot-list b {
+  margin-right: 5px;
+}
+.draft-shot-list {
+  margin: 18px 0 12px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.draft-shot-list > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 11px;
+}
+.draft-shot-list b {
+  color: #67864d;
+  width: 15px;
+}
+.draft-shot-list span {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.draft-shot-list small {
+  display: block;
+  font-size: 10px;
+  text-transform: capitalize;
+  color: #7d8874;
+}
+.draft-actions {
+  display: flex;
+  gap: 20px;
+  margin: 12px 0 24px;
+}
+.draft-cancel {
+  display: block;
+  margin: 10px 0;
+}
+.finish-point {
+  border-top: 1px solid var(--color-border);
+  margin-top: 22px;
+  padding-top: 20px;
+}
+.finish-point h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+.point-winner {
+  font-size: 12px;
+  margin: 14px 0;
+}
+.match-distribution {
+  max-width: 100%;
+}
+.logging-panel .helper {
+  margin-top: 10px;
+}

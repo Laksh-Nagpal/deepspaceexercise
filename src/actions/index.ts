@@ -5,6 +5,7 @@ import {
   matchInput,
   pointInput,
   hitter,
+  rallyError,
   type Point,
 } from '../features/matches/model'
 import { access, denied } from './access'
@@ -50,6 +51,16 @@ export const actions: Record<string, ActionHandler<Env>> = {
         outcome: i % 3 ? 'winner' : 'unforced error',
         x: 0.3 + (i % 3) * 0.1,
         y: 0.2 + (i % 4) * 0.1,
+        rally: [
+          { shotType: 'serve', shotBy: 'player', x: 0.6, y: 0.3 },
+          { shotType: 'backhand', shotBy: 'opponent', x: 0.4, y: 0.7 },
+          {
+            shotType: i % 2 ? 'backhand' : 'forehand',
+            shotBy: 'player',
+            x: 0.3 + (i % 3) * 0.1,
+            y: 0.2 + (i % 4) * 0.1,
+          },
+        ],
       })
       if (!result.success) return result
     }
@@ -91,6 +102,8 @@ export const actions: Record<string, ActionHandler<Env>> = {
         success: false,
         error: 'Choose a valid shot location, type, winner and outcome.',
       }
+    const invalidRally = rallyError(input.data)
+    if (invalidRally) return { success: false, error: invalidRally }
     const grant = await access(ctx, input.data.matchId)
     if (!grant || grant.role === 'viewer') return denied
     if (grant.data.status === 'completed')

@@ -60,8 +60,9 @@ export function AnalysisPanel({
       </div>
       <p className="helper">
         Finish the match with at least 10 points. AI suggests tactical
-        experiments; statistics below are calculated from recorded points. This
-        sample captures finishing shots, not full rallies.
+        experiments; statistics below are calculated from recorded points.
+        Rally-length and buildup evidence uses explicitly recorded rallies only;
+        older points have finishing-shot coverage.
       </p>
       {canWrite && (
         <Button
@@ -99,8 +100,8 @@ export function AnalysisPanel({
       )}
       {stale && (
         <p className="form-error">
-          Match data changed. This saved review is historical; generate a fresh
-          report.
+          Match data or the analysis method changed. This saved review is
+          historical; generate a fresh report.
         </p>
       )}
       {report && (

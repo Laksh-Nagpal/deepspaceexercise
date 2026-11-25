@@ -1,7 +1,7 @@
 # RallyIQ
 
 A collaborative tennis match notebook built with **DeepSpace 0.44.2**, React 19,
-TypeScript, Vite and Cloudflare Workers. Record finishing shots on a court,
+TypeScript, Vite and Cloudflare Workers. Record complete shot-by-shot rallies on a court,
 follow a match live with a coach, and generate evidence-cited tactical advice.
 
 - Live app: https://deep-exercise.app.space
@@ -29,10 +29,15 @@ terminal automatically. Do not hand-edit generated `.dev.vars`.
 ## Product workflow
 
 1. Sign in, create a match, and enter player names and optional match notes.
-2. Select a finishing-shot location with a click/tap or arrow keys and Enter.
-3. Choose shot type, hitter, outcome and point winner. The form keeps hitter,
-   outcome and winner consistent; the server validates the same relationship.
-4. Save points; other authorized browsers update through DeepSpace subscriptions.
+2. Select a shot location with a click/tap or arrow keys and Enter. Choose its
+   type and initial hitter, then **Add shot**. Hitters alternate automatically.
+3. Repeat for each shot in the point. Undo the last draft shot or edit a draft
+   shot's type/location. Select the final outcome; the point winner follows from
+   that outcome and the last hitter. **Save point** commits the whole sequence
+   atomically and counts exactly one point.
+4. Other authorized browsers receive the saved point with its entire sequence.
+   Use **Replay** to step through numbered landing locations. Connectors show
+   landing order, not measured trajectories or hitter movement.
 5. The owner creates coach/viewer invitations by email. Share the URL manually;
    **no email is sent**. The invitee signs in with the invited email and accepts
    in their workspace. Pending invitations refresh every 15 seconds or on demand.
@@ -44,7 +49,7 @@ terminal automatically. Do not hand-edit generated `.dev.vars`.
    historical when point IDs/revisions change, including after deletion.
 
 The **Try a sample match** button creates a private completed match containing
-12 clearly labelled synthetic points. No AI call occurs until Generate analysis.
+12 clearly labelled synthetic three-shot rallies (36 shots, still 12 points). No AI call occurs until Generate analysis.
 
 ## Architecture and files
 
@@ -77,8 +82,14 @@ hand-maintained counters are used.
 status; system envelope holds its owner (`createdBy`).
 
 `points`: matchId, match ownerId, finishing-shot type/hitter, point winner,
-outcome, normalized x/y coordinates, requestId; system envelope records author
-and timestamps. A point is a **finishing shot**, not a complete rally.
+outcome, normalized terminal x/y coordinates, requestId and an ordered JSON
+`rally` array of `{shotType, shotBy, x, y}`. One row is one completed point; the
+JSON array is stored natively by DeepSpace and committed atomically with the
+result. Terminal columns are retained for compatibility and must agree with
+the last shot. The server validates alternating hitters and serve placement
+in the sequence. It does not adjudicate line calls. System fields retain author
+and timestamps. Old rows without a rally retain **finishing-shot-only** coverage;
+missing buildup is never synthesized.
 
 `team_members`: native TeamId/UserId/Status fields, match role, email and ownerId.
 `invitations`: matchId, recipient email, role, status and match label.
@@ -109,15 +120,18 @@ information a previously authorized person already viewed.
 
 ### AI grounding and cost
 
-The server calculates point totals, win rate, finishing-shot counts, winners,
-and unforced errors for the selected player. Legacy points infer the hitter
-from winner/outcome; new points store it explicitly. AI sees only those
+The server calculates point totals, win rate, all known shot-type counts,
+terminal winners/errors, explicit-rally coverage, average recorded rally length,
+long-rally results, and prior-shot left/right placements before player winners. Legacy points infer only the known final hitter from winner/outcome; new
+rallies store every hitter explicitly. Legacy rows contribute no invented
+rally length or setup evidence. AI sees only those
 aggregated facts, not names, emails, credentials or free-text observations.
 
 DeepSpace `createDeepSpaceAI` routes a structured Vercel AI SDK call to an
 installed catalog model (preferring Anthropic Haiku). It suggests two or three
 experiments and references server-defined evidence IDs. Output schema, citation
-IDs and numeric text are checked. Exact supporting numbers are rendered from
+IDs and numeric text are checked. When rally sequences exist, at least one
+recommendation must cite rally-length, long-rally or setup-placement evidence. Exact supporting numbers are rendered from
 server facts, not generated prose. Advice is observational and may still be
 imperfect; no guarantees of tactical success are made.
 
@@ -134,6 +148,11 @@ rechecked after generation. No fabricated fallback report is shown on failure.
 - Match/point state survives refreshes and new browser contexts via server storage.
 - Displays the latest 100 authorized matches, first 500 points and latest 100
   observations; UI labels these limits. Larger-scale pagination is future work.
+- New points support up to 100 ordered shots. In-progress drafts are local to
+  the recording browser and lost on refresh; they are not persisted, broadcast
+  or counted until the point is saved. This avoids half-written scored points.
+  Owners/coaches can record different points concurrently, but do not co-edit
+  the same unsaved draft.
 - No full game/set scoring, video analysis, computer vision, payments or external
   sports APIs. Presence, granular point editing and automated email delivery are
   intentionally omitted; correction uses remove-and-reenter.
@@ -158,8 +177,10 @@ stored by the CLI outside this repository. Tests create local synthetic matches.
 
 The opt-in AI test is skipped by default to keep routine tests free of provider
 charges. Unit tests validate deterministic statistics, malformed inputs,
-parent authorization, revoked-author reads and rejected AI citations/numbers.
+parent authorization, revoked-author reads, rally ordering/terminal validation,
+legacy coverage and rejected AI citations/numbers.
 Browser tests cover creation, placement, refresh/new-context persistence,
+multi-shot point counting, draft undo/editing, numbered replay,
 same-account and cross-account updates, coach/viewer/outsider actions, invitation
 acceptance/cancellation, open-socket revocation, correction, replay-safe point
 saves, and the pre-AI evidence gate. Live-provider verification additionally
@@ -192,3 +213,10 @@ Store custom secrets through `npx deepspace secrets`; never commit `.dev.vars`,
 - https://github.com/deepdotspace/tally/blob/main/src/schemas.ts
 
 Installed types/source and CLI help are the authority for this pinned version.
+
+## Rally analysis versioning
+
+Analysis fingerprints and source-version markers include `rally-v2`. Saved
+finishing-shot-era reports remain readable but are marked historical and cannot
+be reused as a current rally-based report. This invalidates old analysis without
+changing or deleting old points.

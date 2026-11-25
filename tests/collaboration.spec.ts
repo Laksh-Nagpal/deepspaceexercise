@@ -68,6 +68,9 @@ test('owner, coach, viewer and outsider have distinct access; revocation removes
   const court = coach.page.getByRole('button', { name: 'Tennis court:' })
   await court.click({ position: { x: 100, y: 150 } })
   await coach.page
+    .getByRole('button', { name: 'Add shot', exact: true })
+    .click()
+  await coach.page
     .getByRole('button', { name: 'Save point', exact: true })
     .click()
   for (const user of [owner, coach, viewer])
@@ -133,6 +136,9 @@ test('owner, coach, viewer and outsider have distinct access; revocation removes
   await expect(viewer.page.locator('.point-history li')).toHaveCount(0)
   // Coach contributes again so revocation covers records created by that coach.
   await court.click({ position: { x: 120, y: 170 } })
+  await coach.page
+    .getByRole('button', { name: 'Add shot', exact: true })
+    .click()
   await coach.page
     .getByRole('button', { name: 'Save point', exact: true })
     .click()
@@ -265,6 +271,16 @@ test('live DeepSpace AI produces persisted evidence-cited advice', async ({
       winner: i % 3 ? 'player' : 'opponent',
       outcome: i % 3 ? 'winner' : 'unforced error',
       requestId: crypto.randomUUID(),
+      rally: [
+        { shotType: 'serve', shotBy: 'player', x: 0.6, y: 0.3 },
+        { shotType: 'backhand', shotBy: 'opponent', x: 0.4, y: 0.7 },
+        {
+          shotType: i % 2 ? 'backhand' : 'forehand',
+          shotBy: 'player',
+          x: 0.3 + (i % 3) * 0.1,
+          y: 0.2 + (i % 4) * 0.1,
+        },
+      ],
     })
     expect(result.error).toBeUndefined()
     createdPoints.push(result.data.recordId)
@@ -288,6 +304,9 @@ test('live DeepSpace AI produces persisted evidence-cited advice', async ({
     })
   await expect(owner.page.locator('.evidence-grid')).toContainText(
     '8 of 12 (67%)',
+  )
+  await expect(owner.page.locator('.evidence-grid')).toContainText(
+    'Average shots per recorded rally',
   )
   await owner.page.reload()
   await expect(
