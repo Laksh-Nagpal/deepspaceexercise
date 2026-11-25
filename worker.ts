@@ -45,8 +45,37 @@ export const __DO_MANIFEST__ = [
 ] as const satisfies DOManifest
 
 export class AppRecordRoom extends RecordRoom<Env> {
+  private rallyState: DurableObjectState
   constructor(state: DurableObjectState, env: Env) {
     super(state, env, schemas, { ownerUserId: env.OWNER_USER_ID })
+    this.rallyState = state
+  }
+  /** Internal-only service call: the public Worker never forwards this path. */
+  async fetch(request: Request): Promise<Response> {
+    if (
+      new URL(request.url).pathname === '/internal/rally/analysis-permit' &&
+      request.headers.get('X-Rally-Internal') === 'analysis'
+    ) {
+      const { matchId } = (await request.json()) as { matchId: string }
+      const now = Date.now(),
+        day = new Date(now).toISOString().slice(0, 10)
+      const allowed = await this.rallyState.storage.transaction(
+        async (storage) => {
+          const last =
+            (await storage.get<number>(`rally-analysis:${matchId}`)) ?? 0
+          const usage = await storage.get<{ day: string; count: number }>(
+            'rally-analysis-usage',
+          )
+          const count = usage?.day === day ? usage.count : 0
+          if (now - last < 60000 || count >= 20) return false
+          await storage.put(`rally-analysis:${matchId}`, now)
+          await storage.put('rally-analysis-usage', { day, count: count + 1 })
+          return true
+        },
+      )
+      return Response.json({ allowed }, { status: allowed ? 200 : 429 })
+    }
+    return super.fetch(request)
   }
 }
 
@@ -128,7 +157,12 @@ app.use('/api/*', cors())
 // arms its alarm in that first fetch — so wake it from the request path, or a
 // deployed schedule waits for a visitor. Once per isolate; no-op without tasks.
 app.use('*', async (c, next) => {
-  armCronRoom(c.executionCtx, c.env.CRON_ROOMS, `app:${c.env.DEEPSPACE_APP_ID}`, cronTasks)
+  armCronRoom(
+    c.executionCtx,
+    c.env.CRON_ROOMS,
+    `app:${c.env.DEEPSPACE_APP_ID}`,
+    cronTasks,
+  )
   await next()
 })
 

@@ -18,7 +18,7 @@
 
 /* Paper — light example theme; shows the full token contract incl.
  * `color-scheme: light`. Replace or delete it once the app has its own. */
-[data-theme="paper"] {
+[data-theme='paper'] {
   color-scheme: light;
   --color-background: #ffffff;
   --color-foreground: #0a0a0a;
@@ -43,4 +43,27 @@
   --shadow-card-hover: 0 2px 8px 0 rgba(0, 0, 0, 0.032);
   --color-shell: #fafafa;
   --color-shell-panel: #ffffff;
+}
+
+[data-theme='rally'] {
+  color-scheme: light;
+  --color-background: #f6f7f3;
+  --color-foreground: #192f32;
+  --color-card: #ffffff;
+  --color-card-foreground: #192f32;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #192f32;
+  --color-primary: #245b44;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #e9eee6;
+  --color-secondary-foreground: #192f32;
+  --color-muted: #ecf0e9;
+  --color-muted-foreground: #64736d;
+  --color-accent: #e5eddf;
+  --color-accent-foreground: #192f32;
+  --color-border: #dce2d7;
+  --color-input: #cbd5c7;
+  --color-ring: #5b8454;
+  --color-shell: #f6f7f3;
+  --color-shell-panel: #fff;
 }

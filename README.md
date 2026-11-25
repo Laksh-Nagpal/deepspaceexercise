@@ -1,117 +1,194 @@
-# DeepSpace exercise
+# RallyIQ
 
-Starter for a five-day DeepSpace take-home. The application idea has not yet
-been selected; the current UI and collections are the generated starter.
+A collaborative tennis match notebook built with **DeepSpace 0.44.2**, React 19,
+TypeScript, Vite and Cloudflare Workers. Record finishing shots on a court,
+follow a match live with a coach, and generate evidence-cited tactical advice.
 
-## Prerequisites
+- Live app: https://deep-exercise.app.space
+- Private source: https://github.com/Laksh-Nagpal/deepspaceexercise
+- Reviewer walkthrough: [SUBMISSION.md](./SUBMISSION.md)
 
-- Node.js 24 (see `.nvmrc`).
-- npm 11.6 or newer.
-- A signed-in DeepSpace CLI session. The CLI is included in the project.
+## Run locally
 
-With nvm, run `nvm install` and `nvm use` in this directory. On this Mac,
-Homebrew Node 24 is already installed and can instead be selected for the
-current terminal:
+Use Node 24 (`.nvmrc`) and npm 11.6+. With nvm: `nvm install && nvm use`.
+On the development Mac, Homebrew Node 24 is already installed:
 
 ```bash
 export PATH="/opt/homebrew/opt/node@24/bin:$PATH"
-node --version
-npm --version
-```
-
-This changes the current shell only; `.nvmrc` is used by nvm-compatible tools
-and does not automatically change an existing terminal's Node version.
-
-## Install and run
-
-```bash
 npm ci
 npx deepspace auth whoami
 # If signed out:
 npm run login
-npm run dev
+npm run dev -- --port 5187 --host 127.0.0.1
 ```
 
-Open the URL printed by the CLI (normally http://localhost:5173). Use the
-DeepSpace development command: it starts Vite and the local Worker together
-and prepares platform configuration. Do not hand-edit generated `.dev.vars`.
+Open http://127.0.0.1:5187/. The CLI prepares local platform configuration and
+starts both Vite and the Worker. `.nvmrc` does not change an already-open
+terminal automatically. Do not hand-edit generated `.dev.vars`.
 
-## Checks
+## Product workflow
+
+1. Sign in, create a match, and enter player names and optional match notes.
+2. Select a finishing-shot location with a click/tap or arrow keys and Enter.
+3. Choose shot type, hitter, outcome and point winner. The form keeps hitter,
+   outcome and winner consistent; the server validates the same relationship.
+4. Save points; other authorized browsers update through DeepSpace subscriptions.
+5. The owner creates coach/viewer invitations by email. Share the URL manually;
+   **no email is sent**. The invitee signs in with the invited email and accepts
+   in their workspace. Pending invitations refresh every 15 seconds or on demand.
+6. Owners/coaches add observations. Viewers only read. Owners revoke membership
+   or cancel invitations; open sockets re-subscribe and lose revoked access.
+7. Remove an incorrect point after confirmation, then re-enter it correctly.
+8. The owner finishes the match. After at least 10 points, owner/coach can request
+   an AI review. Reopening lets recording continue. A saved review is marked
+   historical when point IDs/revisions change, including after deletion.
+
+The **Try a sample match** button creates a private completed match containing
+12 clearly labelled synthetic points. No AI call occurs until Generate analysis.
+
+## Architecture and files
+
+- `src/pages/index.tsx`: static prerendered front page; no auth/data connection.
+- `src/pages/(app)/_layout.tsx`: SDK auth, RecordProvider and RecordScope.
+- `src/pages/(app)/home.tsx`: match list, invitation inbox and selected match.
+- `src/features/matches/`: modular court, creation/detail UI, sharing,
+  observations, analysis panel, input validation and deterministic statistics.
+- `src/schemas/`: collection definitions; `src/schemas.ts` registers them for
+  the browser and Worker.
+- `src/actions/access.ts`: parent-match authorization and verified profile email.
+- `src/actions/index.ts`: match lifecycle, point logging/removal, sample data,
+  and additive compatibility for Phase 1 records.
+- `src/actions/collaboration.ts`: email-bound invitations, membership and notes.
+- `src/actions/analysis.ts`: deterministic evidence, input fingerprint, bounded
+  provider call, output validation and saved report.
+- `worker.ts`: existing Hono/DO wiring plus an internal persistent AI rate gate.
+- `src/server/`: scaffolded auth, HTTP, WebSocket and action transports.
+- `tests/`: real-browser smoke, API, persistence and four-user authorization tests.
+
+Data flow: authenticated HTTP action → Zod validation → parent authorization →
+RecordRoom SQLite write → WebSocket subscription → derived UI statistics.
+Records use the SDK envelope; application fields live under `record.data`.
+Only draft input lives in React state. No localStorage database or separate
+hand-maintained counters are used.
+
+### Data model
+
+`matches`: player, opponent, details, teamId (the match ID), tracking/completed
+status; system envelope holds its owner (`createdBy`).
+
+`points`: matchId, match ownerId, finishing-shot type/hitter, point winner,
+outcome, normalized x/y coordinates, requestId; system envelope records author
+and timestamps. A point is a **finishing shot**, not a complete rally.
+
+`team_members`: native TeamId/UserId/Status fields, match role, email and ownerId.
+`invitations`: matchId, recipient email, role, status and match label.
+`observations`: matchId, ownerId, author, text and timestamps.
+`analyses`: matchId, ownerId, input fingerprint, structured report and model.
+Required scaffold `users` and admin `settings` collections remain registered.
+
+### Authorization decisions
+
+AuthGate protects UI only. Server actions authenticate with the SDK JWT and
+check the parent match before every privileged operation. **Action tools bypass
+RBAC**, so the helper's checks are mandatory, including after slow AI calls.
+
+Owners manage membership and match completion; owners/coaches record and remove
+points, add observations and request analysis; viewers read only. Outsiders and
+anonymous callers get no match access. All direct record writes are denied,
+including via agent tools. Child records use **match-owner ownership**, not the
+coach's authorship, so a former coach cannot retain access through createdBy.
+
+Shared reads use DeepSpace's native `access` policy and same-scope team_members.
+SDK 0.44.2's `team` SQL query fast path assumes createdBy ownership; `access`
+uses per-record ownerField checks instead. Membership columns use the SDK's
+`UserId` notification spelling so revocation refreshes already-open clients.
+No SDK code is patched. Roles are match-specific, never app-admin promotions.
+An invitation is email-bound, not a bearer link. Email comes from the caller's
+system-managed users profile. Revocation stops future access, not copies of
+information a previously authorized person already viewed.
+
+### AI grounding and cost
+
+The server calculates point totals, win rate, finishing-shot counts, winners,
+and unforced errors for the selected player. Legacy points infer the hitter
+from winner/outcome; new points store it explicitly. AI sees only those
+aggregated facts, not names, emails, credentials or free-text observations.
+
+DeepSpace `createDeepSpaceAI` routes a structured Vercel AI SDK call to an
+installed catalog model (preferring Anthropic Haiku). It suggests two or three
+experiments and references server-defined evidence IDs. Output schema, citation
+IDs and numeric text are checked. Exact supporting numbers are rendered from
+server facts, not generated prose. Advice is observational and may still be
+imperfect; no guarantees of tactical success are made.
+
+Calls are **app-owner funded**. A Durable Object storage transaction enforces
+one new attempt per match per minute and 20 attempts per UTC day for the app,
+including failed calls. The model output is capped and requests time out after
+45 seconds. Identical snapshots reuse saved reports. Data and membership are
+rechecked after generation. No fabricated fallback report is shown on failure.
+
+### Reliability and scope
+
+- Save failures remain visible. Point draft UUIDs make retries idempotent; UI
+  prevents double clicks. No automatic offline write queue is claimed.
+- Match/point state survives refreshes and new browser contexts via server storage.
+- Displays the latest 100 authorized matches, first 500 points and latest 100
+  observations; UI labels these limits. Larger-scale pagination is future work.
+- No full game/set scoring, video analysis, computer vision, payments or external
+  sports APIs. Presence, granular point editing and automated email delivery are
+  intentionally omitted; correction uses remove-and-reenter.
+- The `deep-exercise` app ID/subdomain is retained to preserve data and source
+  ownership. RallyIQ is its display brand.
+
+## Tests
 
 ```bash
-npm run validate                  # TypeScript and unit tests
-npm run lint                      # ESLint
-npm run build                     # Production build; does not deploy
-npm test                          # Default DeepSpace runtime checks
-npx deepspace test run all        # All runtime specs, including collaboration
+npm run validate
+npm run lint
+npm run build
+npx deepspace test run all --port 5191
+# Opt-in real provider call (owner-funded; needs quota/credits):
+RUN_LIVE_AI=1 npx deepspace test run all --port 5191
 ```
 
-The collaboration specs need two usable DeepSpace test accounts on this
-machine. Without them, those tests skip explicitly. Run
-`npx deepspace test accounts --help` for the account-management commands.
-Never place test passwords in commands, repository files, or logs.
+Multi-user tests need four usable test accounts. Inspect
+`npx deepspace test accounts create --help`; use generated credentials through
+`--password-stdin`, never passwords on argv or in source. Test credentials are
+stored by the CLI outside this repository. Tests create local synthetic matches.
 
-## Architecture
+The opt-in AI test is skipped by default to keep routine tests free of provider
+charges. Unit tests validate deterministic statistics, malformed inputs,
+parent authorization, revoked-author reads and rejected AI citations/numbers.
+Browser tests cover creation, placement, refresh/new-context persistence,
+same-account and cross-account updates, coach/viewer/outsider actions, invitation
+acceptance/cancellation, open-socket revocation, correction, replay-safe point
+saves, and the pre-AI evidence gate. Live-provider verification additionally
+checks saved advice, exact evidence and cached reuse.
 
-- `src/main.tsx`: mounts React and the generated file-based router.
-- `src/pages/_app.tsx`: shared UI providers and error boundary; no auth or
-  records connection on static pages.
-- `src/pages/index.tsx`: public, prerendered landing page.
-- `src/pages/(app)/_layout.tsx`: authentication and real-time record providers.
-- `src/pages/(app)/(protected)/_layout.tsx`: additionally requires sign-in.
-  Parenthesized route groups do not appear in URLs.
-- `src/schemas.ts` and `src/schemas/`: collection fields and server-enforced
-  permissions. Keep the required `users` collection.
-- `worker.ts`: assembles the Hono backend and exports Durable Object classes.
-- `src/server/`: HTTP, WebSocket, and server-action route implementations.
-- `src/actions/index.ts`: application-specific server actions (currently empty).
-- `src/ai/tools.ts`: shared AI/local-agent tool definitions, already registered
-  by the Worker. In-app AI chat is not installed yet.
-- `src/integrations.ts`: integration billing and anonymous-access policy.
-- `src/cron.ts` and `src/jobs.ts`: scheduled/background work (currently empty).
-- `wrangler.toml`: app identity, Worker assets, and Durable Object bindings.
-- `src/components/ui/`, `src/themes.*`, and `src/styles.css`: UI and styling.
-- `tests/`: Playwright smoke, API, and multi-user checks.
+## Deploy and secrets
 
-Data flow: React `useQuery()` subscribes over a WebSocket; `useMutations()`
-sends changes; the RecordRoom checks permissions, persists accepted changes
-in SQLite, and broadcasts updates. Application fields are under `record.data`.
-Wait for mutation readiness; use confirmed mutations when subsequent UI
-behavior depends on server acceptance. An auth gate is UI protection, while
-collection permissions are the data security boundary.
-
-## GitHub and deployment
-
-The requested repository is private and named `deepspaceexercise`. Connect the
-intended GitHub `origin` before the first deploy. DeepSpace permanently selects
-the source provider on first source use: a first deploy with a selected GitHub
-remote claims GitHub source. Do not run `deepspace push` before that deploy.
-
-For GitHub source, use ordinary Git for commits and pushes. Deploy ships the
-current checkout, including uncommitted changes, so review the working tree
-and commit intended changes before shipping:
+GitHub is the permanent source. Review, commit and push intended changes, then:
 
 ```bash
-git status
-git push -u origin main
+git push origin main
 npm run deploy
 npx deepspace releases
+npx deepspace logs --since 5m --level error
 ```
 
-Deployment uses DeepSpace-managed Cloudflare infrastructure; no separate
-Cloudflare account is required. The CLI returns the live app URL.
+Deploy ships the current checkout, including dirty bytes. GitHub pushes do not
+automatically deploy. No separate Cloudflare account is needed.
+Store custom secrets through `npx deepspace secrets`; never commit `.dev.vars`,
+`.env`, credentials, browser auth state or local build folders. Those are ignored.
 
-## Secrets
+## Documentation reviewed
 
-Store app secrets with the DeepSpace encrypted secrets store; inspect
-`npx deepspace secrets --help` for the supported workflow. `.dev.vars`, `.env`
-files, dependencies, local runtime state, and build output are ignored by Git.
-Never commit credentials or publish local build folders as repository content.
+- https://docs.deep.space/concepts/permissions.md
+- https://docs.deep.space/guides/data-storage.md
+- https://docs.deep.space/guides/authentication.md
+- https://docs.deep.space/guides/ai-chat.md
+- https://github.com/deepdotspace/deepspace-skill
+- https://github.com/deepdotspace/taskspace/blob/main/src/schemas.ts
+- https://github.com/deepdotspace/tally/blob/main/src/schemas.ts
 
-## References
-
-- [DeepSpace docs](https://docs.deep.space/)
-- [Authentication](https://docs.deep.space/guides/authentication)
-- [Data storage](https://docs.deep.space/guides/data-storage)
-- [Source control](https://docs.deep.space/guides/source-control)
-- [Testing](https://docs.deep.space/guides/testing)
+Installed types/source and CLI help are the authority for this pinned version.
