@@ -1,22 +1,8 @@
+import { Button } from '@/components/ui'
 import { useState } from 'react'
 import { useQuery } from 'deepspace'
-import { z } from 'zod'
-import { Button } from '@/components/ui'
+import { parseSavedReport } from './report'
 import { matchAction } from './api'
-const reportSchema = z.object({
-  sourceVersion: z.string(),
-  pointCount: z.number(),
-  evidence: z.array(
-    z.object({ id: z.string(), label: z.string(), value: z.string() }),
-  ),
-  recommendations: z.array(
-    z.object({
-      title: z.string(),
-      action: z.string(),
-      evidenceIds: z.array(z.string()),
-    }),
-  ),
-})
 export function AnalysisPanel({
   id,
   completed,
@@ -39,15 +25,7 @@ export function AnalysisPanel({
   const [busy, setBusy] = useState(false),
     [error, setError] = useState('')
   const record = query.records[0]
-  let parsed: ReturnType<typeof reportSchema.safeParse> | null = null
-  try {
-    parsed = record
-      ? reportSchema.safeParse(JSON.parse(record.data.report))
-      : null
-  } catch {
-    /* Ignore malformed historical reports; a new report can be generated. */
-  }
-  const report = parsed?.success ? parsed.data : null
+  const report = parseSavedReport(record?.data.report)
   const stale = report && report.sourceVersion !== sourceVersion
   return (
     <section className="collaboration-section analysis-panel">

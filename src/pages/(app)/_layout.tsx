@@ -31,10 +31,16 @@ export default function AppLayout() {
           when <Seo> unmounts, so every route without <Seo> sets its own. */}
       <title>{APP_NAME}</title>
       <AuthBoot>
-        <div className="flex h-screen flex-col bg-background overflow-hidden">
+        <div className="app-frame flex h-screen flex-col bg-background overflow-hidden">
           <Navigation />
-          <main className="flex-1 overflow-y-auto min-h-0">
-            <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading...</div>}>
+          <main className="app-stage flex-1 overflow-y-auto min-h-0">
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  Loading...
+                </div>
+              }
+            >
               <Outlet />
             </Suspense>
           </main>
@@ -69,7 +75,9 @@ function AuthBoot({ children }: { children: ReactNode }) {
     <RecordProvider
       allowAnonymous
       onWriteError={(e) =>
-        e.kind === 'permission' ? warning(e.title, e.detail) : error(e.title, e.detail)
+        e.kind === 'permission'
+          ? warning(e.title, e.detail)
+          : error(e.title, e.detail)
       }
     >
       <RecordScope roomId={SCOPE_ID} schemas={schemas}>

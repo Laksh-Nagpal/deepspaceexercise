@@ -25,6 +25,7 @@ test('create, log, synchronize, refresh and reopen a private match', async ({
   await expect(
     page.getByRole('button', { name: 'Save point', exact: true }),
   ).toBeDisabled()
+  await page.getByRole('switch', { name: 'Quick entry' }).uncheck()
   const court = page.getByRole('button', { name: 'Tennis court:' })
   await court.click({ position: { x: 110, y: 150 } })
   await page.getByRole('button', { name: 'Add shot', exact: true }).click()

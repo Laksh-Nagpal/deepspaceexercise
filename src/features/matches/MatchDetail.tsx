@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery, useAuth } from 'deepspace'
 import { Button } from '@/components/ui'
 import {
@@ -104,8 +105,11 @@ export function MatchDetail({
           was interrupted.
         </p>
       )}
-      {role === 'owner' && (
-        <div className="match-controls">
+      <div className="match-controls">
+        <Link className="report-link" to={`/report/${encodeURIComponent(id)}`}>
+          Print match report
+        </Link>
+        {role === 'owner' && (
           <Button
             variant="outline"
             disabled={saving || !online}
@@ -126,8 +130,8 @@ export function MatchDetail({
           >
             {completed ? 'Reopen match' : 'Finish match'}
           </Button>
-        </div>
-      )}
+        )}
+      </div>
       {error && (
         <p role="alert" className="form-error">
           {error}

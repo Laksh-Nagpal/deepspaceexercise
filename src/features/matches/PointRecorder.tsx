@@ -36,6 +36,13 @@ export function PointRecorder({
   disabled: boolean
 }) {
   const [draft, setDraft] = useState<Shot[]>([])
+  const [quick, setQuick] = useState(true)
+  const [finishOpen, setFinishOpen] = useState(false)
+  const finishDialog = useRef<HTMLDialogElement>(null)
+  useEffect(() => {
+    if (finishOpen) finishDialog.current?.showModal()
+    else finishDialog.current?.close()
+  }, [finishOpen])
   const [location, setLocation] = useState<{ x: number; y: number }>()
   const [shotType, setType] = useState<Shot['shotType']>('serve')
   const [shotBy, setHitter] = useState<Shot['shotBy']>('player')
@@ -69,14 +76,14 @@ export function PointRecorder({
   }
   function place(p: { x: number; y: number }) {
     clearReplay()
-    setLocation(p)
+    if (quick && editing === null) addShot(p)
+    else setLocation(p)
     setMessage('')
   }
-  function addShot() {
-    if (!location || !writable || (draft.length >= 100 && editing === null))
-      return
+  function addShot(at = location) {
+    if (!at || !writable || (draft.length >= 100 && editing === null)) return
     clearReplay()
-    const shot: Shot = { ...location, shotType, shotBy }
+    const shot: Shot = { ...at, shotType, shotBy }
     if (editing === null && last?.shotBy === shotBy) {
       setError('The next shot must be hit by the other player.')
       return
@@ -96,7 +103,7 @@ export function PointRecorder({
     )
     if (editing === null) setHitter(shotBy === 'player' ? 'opponent' : 'player')
     else setHitter(last!.shotBy === 'player' ? 'opponent' : 'player')
-    setType('forehand')
+    if (!quick || shotType === 'serve' || editing !== null) setType('forehand')
     setLocation(undefined)
     setEditing(null)
     changed()
@@ -104,7 +111,7 @@ export function PointRecorder({
   function undo() {
     if (!writable || !last) return
     setDraft(draft.slice(0, -1))
-    setLocation({ x: last.x, y: last.y })
+    setLocation(quick ? undefined : { x: last.x, y: last.y })
     setType(last.shotType)
     setHitter(last.shotBy)
     setEditing(null)
@@ -125,6 +132,7 @@ export function PointRecorder({
         rally: draft,
         requestId: requestId.current,
       })
+      setFinishOpen(false)
       setDraft([])
       setLocation(undefined)
       setType('serve')
@@ -147,6 +155,50 @@ export function PointRecorder({
     : draft.length
       ? draft
       : undefined
+  const finishControls = (
+    <div className="finish-point">
+      <h3>Finish the point</h3>
+      <label className="outcome-label">
+        How did the point end?
+        <select
+          value={outcome}
+          disabled={!writable || !draft.length}
+          onChange={(e) => {
+            setOutcome(e.target.value as Point['outcome'])
+            changed()
+          }}
+        >
+          {outcomes.map((o) => (
+            <option key={o}>{o}</option>
+          ))}
+        </select>
+      </label>
+      <p className="point-winner">
+        Point winner:{' '}
+        <strong>{winner ? name(winner) : 'Add a shot first'}</strong>
+      </p>
+      <p className="helper">
+        The outcome applies only to the last added shot. An error awards the
+        point to the other player.
+      </p>
+      <Button
+        className="w-full"
+        onClick={save}
+        disabled={
+          !writable || !draft.length || !!location || points.length >= 500
+        }
+      >
+        {busy ? 'Saving rally…' : 'Save point'}
+      </Button>
+      {location && draft.length > 0 && (
+        <p className="helper">Add or cancel the selected shot before saving.</p>
+      )}
+      <p className="helper">
+        One completed rally = one point. Up to 100 shots per point. Unsaved
+        drafts are lost on refresh.
+      </p>
+    </div>
+  )
   return (
     <div className="tracking-grid">
       <section className="court-panel">
@@ -201,6 +253,81 @@ export function PointRecorder({
             </div>
           </div>
         )}
+        <div className="court-capture">
+          <label className="quick-toggle">
+            <input
+              type="checkbox"
+              role="switch"
+              aria-label="Quick entry"
+              checked={quick}
+              disabled={!writable || editing !== null}
+              onChange={(e) => {
+                setQuick(e.target.checked)
+                setLocation(undefined)
+              }}
+            />
+            Quick entry{' '}
+            <small>
+              {quick
+                ? 'Each court tap adds a shot'
+                : 'Select a location, then Add shot'}
+            </small>
+          </label>
+          <fieldset disabled={!writable}>
+            <legend>Shot type</legend>
+            <div className="choice-grid">
+              {shotTypes.map((t) => (
+                <button
+                  key={t}
+                  disabled={
+                    t === 'serve' &&
+                    (editing === null ? draft.length > 0 : editing > 0)
+                  }
+                  aria-pressed={shotType === t}
+                  className={shotType === t ? 'choice active' : 'choice'}
+                  onClick={() => setType(t)}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          <label className="outcome-label">
+            Who hits this shot?
+            <select
+              aria-label="Who hits this shot?"
+              disabled={!writable || draft.length > 0}
+              value={shotBy}
+              onChange={(e) => setHitter(e.target.value as Shot['shotBy'])}
+            >
+              <option value="player">{match.player}</option>
+              <option value="opponent">{match.opponent}</option>
+            </select>
+          </label>
+          <p className="helper">
+            Hitters alternate automatically after each added shot.
+          </p>
+          <div className="courtside-actions">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!writable || !draft.length || editing !== null}
+              onClick={undo}
+            >
+              Undo last shot
+            </Button>
+            <Button
+              size="sm"
+              disabled={
+                !writable || !draft.length || !!location || points.length >= 500
+              }
+              onClick={() => setFinishOpen(true)}
+            >
+              Finish point
+            </Button>
+            <span aria-live="polite">{draft.length} / 100 shots</span>
+          </div>
+        </div>
         <div className="court-stage">
           <span className="court-end">OPPONENT’S END</span>
           <Court
@@ -239,6 +366,27 @@ export function PointRecorder({
           </div>
         )}
       </section>
+      <dialog
+        ref={finishDialog}
+        className="finish-dialog"
+        aria-label="Finish point"
+        onCancel={() => setFinishOpen(false)}
+      >
+        {finishOpen && finishControls}
+        {error && (
+          <p role="alert" className="form-error">
+            {error}
+          </p>
+        )}
+        <Button
+          variant="outline"
+          className="w-full"
+          disabled={busy}
+          onClick={() => setFinishOpen(false)}
+        >
+          Back to rally
+        </Button>
+      </dialog>
       <aside className="logging-panel">
         <div className="section-heading">
           <div>
@@ -265,50 +413,20 @@ export function PointRecorder({
             ? 'Shot location selected'
             : 'Select the next shot’s landing on the court'}
         </div>
-        <fieldset disabled={!writable}>
-          <legend>Shot type</legend>
-          <div className="choice-grid">
-            {shotTypes.map((t) => (
-              <button
-                key={t}
-                disabled={
-                  t === 'serve' &&
-                  (editing === null ? draft.length > 0 : editing > 0)
-                }
-                aria-pressed={shotType === t}
-                className={shotType === t ? 'choice active' : 'choice'}
-                onClick={() => setType(t)}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-        <label className="outcome-label">
-          Who hits this shot?
-          <select
-            aria-label="Who hits this shot?"
-            disabled={!writable || draft.length > 0}
-            value={shotBy}
-            onChange={(e) => setHitter(e.target.value as Shot['shotBy'])}
+        {(!quick || editing !== null) && (
+          <Button
+            className="w-full"
+            disabled={
+              !writable ||
+              !location ||
+              (draft.length >= 100 && editing === null)
+            }
+            onClick={() => addShot()}
           >
-            <option value="player">{match.player}</option>
-            <option value="opponent">{match.opponent}</option>
-          </select>
-        </label>
-        <p className="helper">
-          Hitters alternate automatically after each added shot.
-        </p>
-        <Button
-          className="w-full"
-          disabled={
-            !writable || !location || (draft.length >= 100 && editing === null)
-          }
-          onClick={addShot}
-        >
-          {editing === null ? 'Add shot' : 'Update shot'}
-          <Plus />
-        </Button>
+            {editing === null ? 'Add shot' : 'Update shot'}
+            <Plus />
+          </Button>
+        )}
         {location && (
           <button
             className="text-link draft-cancel"
@@ -352,13 +470,6 @@ export function PointRecorder({
             <div className="draft-actions">
               <button
                 className="text-link"
-                disabled={!writable || editing !== null}
-                onClick={undo}
-              >
-                Undo last shot
-              </button>
-              <button
-                className="text-link"
                 disabled={!writable}
                 onClick={() => {
                   if (!window.confirm('Discard this unsaved rally?')) return
@@ -375,51 +486,8 @@ export function PointRecorder({
             </div>
           </>
         )}
-        <div className="finish-point">
-          <h3>Finish the point</h3>
-          <label className="outcome-label">
-            How did the point end?
-            <select
-              value={outcome}
-              disabled={!writable || !draft.length}
-              onChange={(e) => {
-                setOutcome(e.target.value as Point['outcome'])
-                changed()
-              }}
-            >
-              {outcomes.map((o) => (
-                <option key={o}>{o}</option>
-              ))}
-            </select>
-          </label>
-          <p className="point-winner">
-            Point winner:{' '}
-            <strong>{winner ? name(winner) : 'Add a shot first'}</strong>
-          </p>
-          <p className="helper">
-            The outcome applies only to the last added shot. An error awards the
-            point to the other player.
-          </p>
-          <Button
-            className="w-full"
-            onClick={save}
-            disabled={
-              !writable || !draft.length || !!location || points.length >= 500
-            }
-          >
-            {busy ? 'Saving rally…' : 'Save point'}
-          </Button>
-          {location && draft.length > 0 && (
-            <p className="helper">
-              Add or cancel the selected shot before saving.
-            </p>
-          )}
-          <p className="helper">
-            One completed rally = one point. Up to 100 shots per point. Unsaved
-            drafts are lost on refresh.
-          </p>
-        </div>
-        {error && (
+        {!finishOpen && finishControls}
+        {!finishOpen && error && (
           <p role="alert" className="form-error">
             {error}
           </p>

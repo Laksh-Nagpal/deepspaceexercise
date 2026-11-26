@@ -21,12 +21,16 @@ import { renderToString } from 'react-dom/server'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import * as app from './pages/_app'
 import Landing from './pages/index'
+import Demo from './pages/demo'
+import DemoReport from './pages/demo-report'
 
 // prerender.ts reads `origin` (canonical URLs, sitemap) and `noindex` from here.
 export { seo } from './seo'
 
 export const PAGES: Record<string, ComponentType> = {
   '/': Landing,
+  '/demo': Demo,
+  '/demo-report': DemoReport,
 }
 
 export const PRERENDER_ROUTES = Object.keys(PAGES)
@@ -36,8 +40,7 @@ const App = app.default
 function Layout() {
   return (
     <>
-      <App />{' '}
-      <></>
+      <App /> <></>
     </>
   )
 }
@@ -50,7 +53,10 @@ export function render(route: string): string {
       {
         Component: Layout,
         ErrorBoundary: app.Catch,
-        children: PRERENDER_ROUTES.map((path) => ({ path, Component: PAGES[path] })),
+        children: PRERENDER_ROUTES.map((path) => ({
+          path,
+          Component: PAGES[path],
+        })),
       },
     ],
     { initialEntries: [route] },

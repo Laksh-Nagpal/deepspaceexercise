@@ -14,6 +14,7 @@ test('a complete rally counts once, replays in order, and persists with draft co
   await expect(
     page.getByRole('heading', { name: 'Rally player vs Rally opponent' }),
   ).toBeVisible()
+  await page.getByRole('switch', { name: 'Quick entry' }).uncheck()
   const url = page.url(),
     court = page.getByRole('button', { name: 'Tennis court:' })
   const append = page.getByRole('button', { name: 'Add shot', exact: true }),

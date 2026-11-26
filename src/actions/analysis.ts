@@ -8,10 +8,7 @@ import { z } from 'zod'
 import type { Env } from '../../worker'
 import { access, denied } from './access'
 import {
-  playerSummary,
-  rallyStats,
   ANALYSIS_VERSION,
-  hitter,
   pointVersion,
   type Point,
 } from '../features/matches/model'
@@ -29,85 +26,8 @@ export const adviceSchema = z.object({
     .max(3),
 })
 export type Advice = z.infer<typeof adviceSchema>
-export type Evidence = { id: string; label: string; value: string }
-export function evidenceFor(points: Point[]): Evidence[] {
-  const s = playerSummary(points)
-  const rallies = rallyStats(points)
-  return [
-    {
-      id: 'points',
-      label: 'Points won',
-      value: `${s.won} of ${s.total} (${s.winRate}%)`,
-    },
-    {
-      id: 'winners',
-      label: 'Your finishing-shot winners',
-      value: String(s.playerWinners),
-    },
-    {
-      id: 'errors',
-      label: 'Your unforced errors',
-      value: String(s.playerErrors),
-    },
-    ...s.playerShots.map((p) => ({
-      id: p.type,
-      label: `Your recorded ${p.type} shots`,
-      value: String(p.count),
-    })),
-    {
-      id: 'rally-coverage',
-      label: 'Points with an explicitly recorded rally',
-      value: `${rallies.recorded} of ${points.length}`,
-    },
-    {
-      id: 'rally-length',
-      label: 'Average shots per recorded rally (excludes legacy points)',
-      value:
-        rallies.average === null ? 'Not recorded' : String(rallies.average),
-    },
-    {
-      id: 'long-rallies',
-      label: 'Points won in recorded rallies of at least five shots',
-      value: `${rallies.longWon} of ${rallies.longTotal}`,
-    },
-    {
-      id: 'setup-left',
-      label:
-        'Your prior shot landed left before your winner (recorded rallies)',
-      value: String(rallies.setupLeft),
-    },
-    {
-      id: 'setup-right',
-      label:
-        'Your prior shot landed right before your winner (recorded rallies)',
-      value: String(rallies.setupRight),
-    },
-    {
-      id: 'backhand-errors',
-      label: 'Your backhand unforced errors',
-      value: String(
-        points.filter(
-          (p) =>
-            hitter(p) === 'player' &&
-            p.shotType === 'backhand' &&
-            p.outcome === 'unforced error',
-        ).length,
-      ),
-    },
-    {
-      id: 'forehand-errors',
-      label: 'Your forehand unforced errors',
-      value: String(
-        points.filter(
-          (p) =>
-            hitter(p) === 'player' &&
-            p.shotType === 'forehand' &&
-            p.outcome === 'unforced error',
-        ).length,
-      ),
-    },
-  ]
-}
+export { evidenceFor } from '../features/matches/evidence'
+import { evidenceFor, type Evidence } from '../features/matches/evidence'
 export function validateAdvice(value: unknown, evidence: Evidence[]): Advice {
   const advice = adviceSchema.parse(value)
   const ids = new Set(evidence.map((e) => e.id))

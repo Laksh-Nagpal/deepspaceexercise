@@ -5,6 +5,7 @@ TypeScript, Vite and Cloudflare Workers. Record complete shot-by-shot rallies on
 follow a match live with a coach, and generate evidence-cited tactical advice.
 
 - Live app: https://deep-exercise.app.space
+- Public demo (no account): https://deep-exercise.app.space/demo
 - Private source: https://github.com/Laksh-Nagpal/deepspaceexercise
 - Reviewer walkthrough: [SUBMISSION.md](./SUBMISSION.md)
 
@@ -28,11 +29,16 @@ terminal automatically. Do not hand-edit generated `.dev.vars`.
 
 ## Product workflow
 
-1. Sign in, create a match, and enter player names and optional match notes.
-2. Select a shot location with a click/tap or arrow keys and Enter. Choose its
-   type and initial hitter, then **Add shot**. Hitters alternate automatically.
+1. Explore the public demo without signing in, or sign in and create a match.
+   Enter player names and optional match notes.
+2. Quick entry is on by default. Choose the shot type and initial hitter, then
+   click/tap a landing location (or use arrow keys and Enter) to add the shot
+   immediately. Hitters alternate automatically. Shot type is retained after
+   returns; a serve switches to forehand. Turn Quick entry off for the explicit
+   select-location → **Add shot** workflow.
 3. Repeat for each shot in the point. Undo the last draft shot or edit a draft
-   shot's type/location. Select the final outcome; the point winner follows from
+   shot's type/location. **Finish point** opens the outcome dialog beside the
+   court; the same controls also appear below the draft. The point winner follows from
    that outcome and the last hitter. **Save point** commits the whole sequence
    atomically and counts exactly one point.
 4. Other authorized browsers receive the saved point with its entire sequence.
@@ -47,9 +53,18 @@ terminal automatically. Do not hand-edit generated `.dev.vars`.
 8. The owner finishes the match. After at least 10 points, owner/coach can request
    an AI review. Reopening lets recording continue. A saved review is marked
    historical when point IDs/revisions change, including after deletion.
+9. **Print match report** opens an authorized preview with current statistics,
+   placement, saved AI advice/evidence and the latest ten observations. Use
+   **Print / Save as PDF** and your browser's Save as PDF destination. Opening a
+   report URL requires match access; exporting does not make a private match public.
 
 The **Try a sample match** button creates a private completed match containing
 12 clearly labelled synthetic three-shot rallies (36 shots, still 12 points). No AI call occurs until Generate analysis.
+
+The public `/demo` and `/demo-report` routes use only bundled, fictional data
+and clearly labelled, hand-written example advice. They make no auth, database,
+WebSocket or AI request and never query private matches. The demo supports
+read-only replay; sign in to record and collaborate.
 
 ## Architecture and files
 
@@ -64,7 +79,10 @@ The **Try a sample match** button creates a private completed match containing
 - `src/actions/index.ts`: match lifecycle, point logging/removal, sample data,
   and additive compatibility for Phase 1 records.
 - `src/actions/collaboration.ts`: email-bound invitations, membership and notes.
-- `src/actions/analysis.ts`: deterministic evidence, input fingerprint, bounded
+- `src/features/matches/evidence.ts`: pure, shared deterministic evidence.
+- `src/features/matches/MatchReport.tsx`: common private/demo print renderer.
+- `src/pages/(app)/(protected)/report/[id].tsx`: native authorized report reads.
+- `src/actions/analysis.ts`: input fingerprint, bounded
   provider call, output validation and saved report.
 - `worker.ts`: existing Hono/DO wiring plus an internal persistent AI rate gate.
 - `src/server/`: scaffolded auth, HTTP, WebSocket and action transports.
@@ -181,6 +199,8 @@ parent authorization, revoked-author reads, rally ordering/terminal validation,
 legacy coverage and rejected AI citations/numbers.
 Browser tests cover creation, placement, refresh/new-context persistence,
 multi-shot point counting, draft undo/editing, numbered replay,
+touch-based quick entry, public demo isolation, printable PDF rendering, report
+access/revocation and anonymous restrictions,
 same-account and cross-account updates, coach/viewer/outsider actions, invitation
 acceptance/cancellation, open-socket revocation, correction, replay-safe point
 saves, and the pre-AI evidence gate. Live-provider verification additionally

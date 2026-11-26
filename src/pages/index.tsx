@@ -24,12 +24,16 @@ export default function Landing() {
               <em>Point by point.</em>
             </h1>
             <p>
-              Go beyond the score. Record every shot, replay the buildup,
-              and understand what created each point.
+              Go beyond the score. Record every shot, replay the buildup, and
+              understand what created each point.
             </p>
-            <Link className="landing-cta" to="/home">
-              Open your match notebook <ArrowUpRight size={17} />
+            <Link className="landing-cta" to="/demo">
+              Explore the public demo <ArrowUpRight size={17} />
             </Link>
+            <p className="landing-demo-note">
+              No sign-in needed.{' '}
+              <Link to="/home">Or start your own match →</Link>
+            </p>
           </div>
           <div className="landing-art">
             <Court points={[]} />

@@ -65,6 +65,7 @@ test('owner, coach, viewer and outsider have distinct access; revocation removes
   await expect(
     coach.page.getByRole('button', { name: 'Save point', exact: true }),
   ).toBeDisabled()
+  await coach.page.getByRole('switch', { name: 'Quick entry' }).uncheck()
   const court = coach.page.getByRole('button', { name: 'Tennis court:' })
   await court.click({ position: { x: 100, y: 150 } })
   await coach.page
@@ -128,6 +129,24 @@ test('owner, coach, viewer and outsider have distinct access; revocation removes
       })
     ).error,
   ).toContain('access denied')
+  // A report URL respects the same access rules as the live workspace.
+  const viewerReport = await viewer.context.newPage()
+  const outsiderReport = await outsider.context.newPage()
+  const coachReport = await coach.context.newPage()
+  await Promise.all(
+    [viewerReport, outsiderReport, coachReport].map((p) =>
+      p.goto(`/report/${id}`),
+    ),
+  )
+  await expect(viewerReport.getByTestId('match-report')).toContainText(player)
+  await expect(viewerReport.getByTestId('match-report')).toContainText(
+    'Backhand contact is late under pressure.',
+  )
+  await expect(
+    outsiderReport.getByRole('heading', { name: 'Report unavailable' }),
+  ).toBeVisible()
+  await expect(outsiderReport.getByTestId('match-report')).toHaveCount(0)
+  await expect(coachReport.getByTestId('match-report')).toBeVisible()
   // Removal is a deliberate correction and updates every viewer.
   owner.page.once('dialog', (dialog) => dialog.accept())
   await owner.page
@@ -151,6 +170,13 @@ test('owner, coach, viewer and outsider have distinct access; revocation removes
     coach.page.getByText('That match is unavailable', { exact: false }),
   ).toBeVisible({ timeout: 15000 })
   await expect(coach.page.locator('.point-history')).toHaveCount(0)
+  await expect(coachReport.getByTestId('match-report')).toHaveCount(0)
+  await expect(
+    coachReport.getByRole('heading', { name: 'Report unavailable' }),
+  ).toBeVisible()
+  await Promise.all(
+    [viewerReport, outsiderReport, coachReport].map((p) => p.close()),
+  )
   expect(
     (
       await action(coach.page, 'logPoint', {
@@ -318,6 +344,13 @@ test('live DeepSpace AI produces persisted evidence-cited advice', async ({
   })
   await expect(
     owner.page.getByText('This saved review is historical', { exact: false }),
+  ).toBeVisible()
+  await owner.page.goto(`/report/${id}`)
+  await expect(owner.page.locator('.report-warning')).toContainText(
+    'Historical review',
+  )
+  await expect(
+    owner.page.locator('.report-recommendation').first(),
   ).toBeVisible()
   expect(
     (await action(owner.page, 'analyzeMatch', { matchId: id })).error,

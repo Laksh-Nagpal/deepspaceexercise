@@ -1,6 +1,7 @@
 # RallyIQ — reviewer guide
 
 Live app: https://deep-exercise.app.space
+Public demo: https://deep-exercise.app.space/demo (no account required)
 Source: https://github.com/Laksh-Nagpal/deepspaceexercise (private; reviewers need repository access)
 
 RallyIQ is a real-time tennis match notebook. It helps a player and coach
@@ -10,11 +11,16 @@ and video processing so the core workflow remains explainable and reliable.
 
 ## Five-minute demo
 
-1. Sign in and select **Try a sample match**. It is clearly labelled synthetic
+1. Explore the public demo without signing in: choose a point, step through
+   the rally and open the sample printable report. Its data and illustrative
+   advice are fictional; no live AI request is made.
+   For the private workflow, sign in and select **Try a sample match**. It is clearly labelled synthetic
    and contains 12 persisted three-shot rallies: 36 shots counted as 12 points. Alternatively create a fresh match.
-2. Reopen a match, place a serve and select **Add shot**. Add the opponent's
-   return and the player's next shot. Edit or undo a draft shot. Set the final
-   outcome and **Save point**: three shots count as one point.
+2. Reopen a match. Quick entry is enabled: each court tap adds the selected
+   shot and alternates the hitter. Record a serve and two returns; Undo and
+   edit are available for corrections. **Finish point** opens an outcome dialog;
+   **Save point** commits three shots as one point. Turn Quick entry off for
+   manual select-location → Add shot entry.
    Replay the saved rally using the numbered court and Previous/Next controls.
    Refresh to demonstrate that the entire ordered sequence persists.
 3. Open the same match in another authorized browser; record a point and show
@@ -28,6 +34,9 @@ and video processing so the core workflow remains explainable and reliable.
 7. Finish a match with at least 10 points. Generate analysis, show the exact
    supporting facts alongside advice, then refresh to show the saved report.
    An identical request reuses the report rather than billing again.
+8. Open **Print match report**, inspect the summary and use **Print / Save as
+   PDF**. The report URL follows match permissions. Sharing an exported file
+   shares its contents, so use the fictional sample for a public example.
 
 No automated invitation email is sent. The recipient accepts in their workspace.
 AI is owner-funded and subject to the visible app quota; there is no API-key setup
@@ -45,7 +54,10 @@ statistical significance.
   RBAC, so each handler explicitly checks its parent match.
 - `src/actions/collaboration.ts`: email-bound invitations become native active
   team memberships; revocation changes membership and refreshes subscriptions.
-- `src/actions/analysis.ts`: computes facts before AI, validates evidence IDs,
+- `src/features/matches/evidence.ts`: computes facts shared by AI and demo.
+- `src/features/matches/MatchReport.tsx`: print preview and printable document;
+  `/report/:id` uses native permissions, while demo fixtures remain public.
+- `src/actions/analysis.ts`: validates evidence IDs,
   caches a data fingerprint and rechecks access after the provider responds.
 - `worker.ts`: standard DeepSpace/Hono assembly and a small persistent AI quota
   gate. Domain UI components remain independent of deployment plumbing.
@@ -132,3 +144,35 @@ browser. The synthetic match's totals were verified as 13 points, 41 recorded
 shots, and a 3.2-shot average. Numbered replay survived refresh, and a real
 DeepSpace AI report used the recorded-rally evidence. No uncaught browser
 errors or mobile horizontal overflow were observed.
+
+## Submission polish — November 26, 2026
+
+- A public, read-only `/demo` replays 12 fictional rallies without sign-in,
+  database reads, app WebSockets or AI requests. Its example advice is clearly
+  labelled as illustrative. Private matches remain behind native permissions.
+- Quick entry records each court tap immediately, alternates hitters, retains
+  the selected return type and puts Undo / Finish point beside the court.
+  The outcome dialog confirms the winner before saving one atomic point.
+  Manual entry and draft editing remain available.
+- Printable match reports include current statistics, shot placement, saved AI
+  recommendations with evidence, historical-review warnings and the latest ten
+  observations. Report URLs honor match roles and live revocation; exporting a
+  PDF is an explicit browser action. `/demo-report` is a fictional public sample.
+- TypeScript, ESLint, production build, 15 unit tests and all 19 browser/API
+  tests passed, including the real AI provider check; none were skipped.
+  New checks cover mobile touch input, one-point counting, refresh persistence,
+  anonymous demo isolation, report permissions and open-report revocation.
+- A4 PDF output was rendered and visually inspected. The demo report occupies
+  two pages; a short report without saved analysis fits on one. Mobile demo
+  layout was checked at 390 × 844 without horizontal overflow.
+
+## Agent involvement and applicant verification
+
+The applicant chose the tennis notebook, directed the collaboration workflow,
+and requested whole-point shot tracking. The coding agent implemented the UI,
+authorized server actions, native data/permissions, AI grounding and deployment,
+and ran the automated and browser verification documented above.
+
+Those checks are agent-assisted verification. In the portal note, describe only
+checks you personally repeated as your own verification. The five-minute demo
+above is a practical rehearsal before the live coding session.
