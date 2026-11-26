@@ -182,3 +182,10 @@ A separate production-build regression also checks direct `/demo` and
 SVG title mismatch; shot labels now use one text string, and demo controls wait
 for hydration before accepting input. Keyboard quick entry was checked as well:
 arrow keys move the visible cursor and Enter adds exactly one shot.
+
+Final live verification passed on November 26 for application commit `de27e7f`,
+release `rel_01M8CRE6FS5PABJ54DD7YDZGAX`: anonymous demo replay made no API
+requests or WebSocket connections; three mobile shots saved as one point,
+synchronized to a second browser and survived refresh/replay. Both public and
+private reports produced A4 PDFs. Anonymous and outsider report access was
+blocked. No browser errors or recent server error logs were observed.
