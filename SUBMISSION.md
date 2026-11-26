@@ -2,7 +2,7 @@
 
 Live app: https://deep-exercise.app.space
 Public demo: https://deep-exercise.app.space/demo (no account required)
-Source: https://github.com/Laksh-Nagpal/deepspaceexercise (private; reviewers need repository access)
+Source: https://github.com/Laksh-Nagpal/deepspaceexercise (public; no invitation required)
 
 RallyIQ is a real-time tennis match notebook. It helps a player and coach
 capture whole rallies shot by shot and share observations, then turn recorded statistics into

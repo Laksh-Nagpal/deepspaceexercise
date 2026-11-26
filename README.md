@@ -6,7 +6,7 @@ follow a match live with a coach, and generate evidence-cited tactical advice.
 
 - Live app: https://deep-exercise.app.space
 - Public demo (no account): https://deep-exercise.app.space/demo
-- Private source: https://github.com/Laksh-Nagpal/deepspaceexercise
+- Public source: https://github.com/Laksh-Nagpal/deepspaceexercise
 - Reviewer walkthrough: [SUBMISSION.md](./SUBMISSION.md)
 
 ## Run locally
