@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Seo } from '@/components/Seo'
 import { seo } from '@/seo'
@@ -7,6 +7,8 @@ import { demoMatch, demoPoints, demoReport } from '@/features/matches/demo'
 import { playerSummary, rallyStats, shotsOf } from '@/features/matches/model'
 import { Button } from '@/components/ui'
 export default function DemoPage() {
+  const [ready, setReady] = useState(false)
+  useEffect(() => setReady(true), [])
   const [pointIndex, setPoint] = useState(0),
     [step, setStep] = useState(demoPoints[0].rally!.length - 1)
   const point = demoPoints[pointIndex],
@@ -87,7 +89,7 @@ export default function DemoPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={step === 0}
+                  disabled={!ready || step === 0}
                   onClick={() => setStep((n) => n - 1)}
                 >
                   Previous shot
@@ -95,7 +97,7 @@ export default function DemoPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={step === shots.length - 1}
+                  disabled={!ready || step === shots.length - 1}
                   onClick={() => setStep((n) => n + 1)}
                 >
                   Next shot
@@ -125,6 +127,7 @@ export default function DemoPage() {
             {demoPoints.map((p, i) => (
               <button
                 key={i}
+                disabled={!ready}
                 aria-pressed={pointIndex === i}
                 onClick={() => {
                   setPoint(i)

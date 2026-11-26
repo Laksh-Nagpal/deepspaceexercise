@@ -183,6 +183,8 @@ rechecked after generation. No fabricated fallback report is shown on failure.
 npm run validate
 npm run lint
 npm run build
+# Test prerendered demo hydration against the production build:
+TEST_PRODUCTION_BUILD=1 DEEPSPACE_PORT=5192 NODE_OPTIONS=--dns-result-order=ipv4first npx playwright test --config tests/playwright.config.ts tests/submission-polish.spec.ts --grep "public demo"
 npx deepspace test run all --port 5191
 # Opt-in real provider call (owner-funded; needs quota/credits):
 RUN_LIVE_AI=1 npx deepspace test run all --port 5191

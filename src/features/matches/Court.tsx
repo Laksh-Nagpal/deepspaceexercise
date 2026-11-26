@@ -19,12 +19,19 @@ export function Court({
 }) {
   const marks = shots ?? points.flatMap(shotsOf)
   const [cursor, setCursor] = useState<Location>({ x: 0.5, y: 0.5 })
+  const [focused, setFocused] = useState(false)
+  const highlight = onSelect && focused ? cursor : selected
   return (
     <svg
       viewBox="0 0 420 720"
       className={`tennis-court ${onSelect ? 'interactive' : ''}`}
       role={onSelect ? 'button' : 'img'}
       tabIndex={onSelect ? 0 : undefined}
+      onFocus={() => {
+        setFocused(true)
+        if (selected) setCursor(selected)
+      }}
+      onBlur={() => setFocused(false)}
       aria-label={
         onSelect
           ? 'Tennis court: click a shot location, or use arrow keys and Enter'
@@ -85,7 +92,6 @@ export function Court({
                   ),
                 }
                 setCursor(next)
-                onSelect(next)
               }
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
@@ -143,10 +149,7 @@ export function Court({
             stroke={activeIndex === i ? '#fff' : '#153b2d'}
             strokeWidth={activeIndex === i ? 3 : 1.5}
           >
-            <title>
-              Shot {i + 1}: {p.shotBy === 'player' ? 'Player' : 'Opponent'} ·{' '}
-              {p.shotType}
-            </title>
+            <title>{`Shot ${i + 1}: ${p.shotBy === 'player' ? 'Player' : 'Opponent'} · ${p.shotType}`}</title>
           </circle>
           {numbered && (
             <text
@@ -162,11 +165,11 @@ export function Court({
           )}
         </g>
       ))}
-      {selected && (
+      {highlight && (
         <g stroke="#fff" fill="none" strokeWidth="2">
-          <circle cx={selected.x * 420} cy={selected.y * 720} r="11" />
+          <circle cx={highlight.x * 420} cy={highlight.y * 720} r="11" />
           <path
-            d={`M${selected.x * 420 - 17} ${selected.y * 720}h34 M${selected.x * 420} ${selected.y * 720 - 17}v34`}
+            d={`M${highlight.x * 420 - 17} ${highlight.y * 720}h34 M${highlight.x * 420} ${highlight.y * 720 - 17}v34`}
           />
         </g>
       )}

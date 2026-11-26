@@ -176,3 +176,9 @@ and ran the automated and browser verification documented above.
 Those checks are agent-assisted verification. In the portal note, describe only
 checks you personally repeated as your own verification. The five-minute demo
 above is a practical rehearsal before the live coding session.
+
+A separate production-build regression also checks direct `/demo` and
+`/demo-report` loads for hydration errors. The live check caught a server-rendered
+SVG title mismatch; shot labels now use one text string, and demo controls wait
+for hydration before accepting input. Keyboard quick entry was checked as well:
+arrow keys move the visible cursor and Enter adds exactly one shot.

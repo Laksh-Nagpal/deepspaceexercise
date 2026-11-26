@@ -3,6 +3,11 @@ import { test, expect, loadAllTestAccounts } from 'deepspace/testing'
 test('the public demo replays fictional rallies without authentication or private data requests', async ({
   page,
 }) => {
+  const browserErrors: string[] = []
+  page.on('pageerror', (e) => browserErrors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') browserErrors.push(m.text())
+  })
   const privateRequests: string[] = []
   page.on('request', (request) => {
     if (new URL(request.url()).pathname.startsWith('/api/'))
@@ -17,6 +22,8 @@ test('the public demo replays fictional rallies without authentication or privat
   await page.goto('/')
   await page.getByRole('link', { name: 'Explore the public demo' }).click()
   await expect(page.getByTestId('public-demo')).toBeVisible()
+  // A direct load must hydrate the prerendered page, not only client navigation.
+  await page.reload()
   await expect(
     page.getByText('NO ACCOUNT REQUIRED', { exact: false }),
   ).toBeVisible()
@@ -35,6 +42,8 @@ test('the public demo replays fictional rallies without authentication or privat
   await expect(page.locator('.shot-marker')).toHaveCount(5)
   await expect(page.getByRole('button', { name: 'Save point' })).toHaveCount(0)
   await page.getByRole('link', { name: 'Print sample report' }).click()
+  await expect(page).toHaveURL(/\/demo-report$/)
+  await page.reload()
   await expect(page.getByTestId('match-report')).toContainText(
     'PUBLIC SYNTHETIC DEMO',
   )
@@ -53,8 +62,6 @@ test('the public demo replays fictional rallies without authentication or privat
     format: 'A4',
     printBackground: true,
   })
-  expect(privateRequests).toEqual([])
-  expect(sockets).toEqual([])
   await page.setViewportSize({ width: 390, height: 844 })
   await page.emulateMedia({ media: 'screen' })
   await page.goto('/demo')
@@ -67,6 +74,12 @@ test('the public demo replays fictional rallies without authentication or privat
     path: '/private/tmp/rallyiq-public-demo-mobile.png',
     fullPage: true,
   })
+  await expect(
+    page.getByRole('button', { name: 'Point 1', exact: false }).first(),
+  ).toBeEnabled()
+  expect(browserErrors).toEqual([])
+  expect(privateRequests).toEqual([])
+  expect(sockets).toEqual([])
 })
 
 test('mobile quick entry alternates hitters, corrects taps, saves once and exports an authorized report', async ({
@@ -125,6 +138,16 @@ test('mobile quick entry alternates hitters, corrects taps, saves once and expor
     await tap(0.5, 0.65)
     await page.getByRole('button', { name: 'forehand', exact: true }).tap()
     await tap(0.7, 0.25)
+    await expect(page.locator('.draft-shot-list > div')).toHaveCount(3)
+    // Arrow keys position the cursor; only Enter appends a keyboard shot.
+    await court.focus()
+    await court.press('ArrowRight')
+    await expect(page.locator('.draft-shot-list > div')).toHaveCount(3)
+    await court.press('Enter')
+    await expect(page.locator('.draft-shot-list > div')).toHaveCount(4)
+    await page
+      .getByRole('button', { name: 'Undo last shot', exact: true })
+      .click()
     await expect(page.locator('.draft-shot-list > div')).toHaveCount(3)
     await expect(page.locator('.point-history li')).toHaveCount(0)
     await page.getByRole('button', { name: 'Finish point', exact: true }).tap()

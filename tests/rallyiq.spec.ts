@@ -38,6 +38,7 @@ test('create, log, synchronize, refresh and reopen a private match', async ({
   await expect(second.locator('.point-history li')).toHaveCount(1)
   await court.focus()
   await court.press('ArrowRight')
+  await court.press('Enter')
   await page.getByRole('button', { name: 'backhand', exact: true }).click()
   await page.getByRole('button', { name: 'Add shot', exact: true }).click()
   await page.getByLabel('How did the point end?').selectOption('unforced error')
